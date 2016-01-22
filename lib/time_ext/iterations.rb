@@ -6,27 +6,33 @@ module TimeExt
     def iterate(unit, options = {}, &block)
       options.reverse_merge!(:map_result => false, :beginning_of => false, :include_start => false, :include_end => true)
       if block_given?
+        this = Time.use_zone(Time.zone) { Time.zone.local_to_utc(self)}.localtime
         units = [:year, :month, :day, :hour, :min, :sec, :usec]
         parent_unit = units[units.index(unit)-1]
         if @of_the.nil?
-          time = self.clone
-          @until ||= (!parent_unit.nil?) ? self.send("#{parent_unit}s_since", 1) : self.send("#{unit}s_since", 1)
+          time = this.clone
+          @until ||= (!parent_unit.nil?) ? this.send("#{parent_unit}s_since", 1) : this.send("#{unit}s_since", 1)
         else
-          time = self.beginning_of(@of_the)
-          @until = self.next(@of_the).beginning_of(@of_the)
+          time = this.beginning_of(@of_the)
+          @until = this.next(@of_the).beginning_of(@of_the)
           options.merge!(:beginning_of => true, :include_start => true, :include_end => false)
         end
-        direction = (self < @until) ? :f : :b
+        direction = (this < @until) ? :f : :b
         succ_method = (direction == :f) ? "next_#{unit}" : "prev_#{unit}"
         time = time.beginning_of(unit) if options[:beginning_of]
         time = time.send(succ_method) if !options[:include_start]
         @until = @until.prev(unit).end_of(unit) if !options[:include_end]
+        # raise "TIME:#{time} UNTIL:#{@until}"
+        # time = Time.use_zone("Bangkok") { Time.zone.local_to_utc(time)}.localtime
+        # raise "TIME:#{time} UNTIL:#{@until} DIRECTION:#{direction} SELF:#{self}"
         results = []
         while (direction == :f && time <= @until) || (direction == :b && time >= @until)
           options[:map_result] ? results << yield(time) : yield(time)
           time = time.send(succ_method)
+          # raise "WHILE TIME: #{time}"
         end
-        options[:map_result] ? results : self
+        # raise "TIME:#{time} UNTIL:#{@until}"
+        options[:map_result] ? results : this
       else
         add_to_chain(:iterate, unit, options)
         self
