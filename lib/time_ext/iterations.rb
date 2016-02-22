@@ -7,6 +7,7 @@ module TimeExt
       options.reverse_merge!(:map_result => false, :beginning_of => false, :include_start => false, :include_end => true)
       if block_given?
         this = Time.use_zone(Time.zone) { Time.zone.local_to_utc(self)}.localtime
+        puts "TIME_EXT iterate #{this}"
         units = [:year, :month, :day, :hour, :min, :sec, :usec]
         parent_unit = units[units.index(unit)-1]
         if @of_the.nil?
